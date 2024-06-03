@@ -34,6 +34,6 @@
     </license>
   </licenses>
   <scm>
-    <url>https://github.com/monkey-projects/plugin-junit</url>
+    <url>https://github.com/monkey-projects/plugin-kaniko</url>
   </scm>
 </project>
