@@ -18,5 +18,5 @@
                :version-env "LIB_VERSION"
                :lib com.monkeyci/plugin-kaniko}}
 
-  :deploy
-  {:exec-fn monkey.build/publish}}}
+  :publish
+  {:exec-fn monkey.build/jar+deploy}}}
