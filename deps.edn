@@ -1,4 +1,4 @@
-{:deps {com.monkeyci/app {:mvn/version "0.5.4"}}
+{:deps {com.monkeyci/app {:mvn/version "0.6.7"}}
 
  :aliases
  {:test

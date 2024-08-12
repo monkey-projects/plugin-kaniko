@@ -7,7 +7,7 @@
 (def kaniko-version "1.21.0")
 
 (defn image
-  "Creates a build job that build and pushes a container image using kaniko."
+  "Creates a build job that builds and pushes a container image using kaniko."
   [{:keys [creds-param subdir dockerfile target-img]
     :or {creds-param "dockerhub-creds"
          dockerfile "Dockerfile"}}
