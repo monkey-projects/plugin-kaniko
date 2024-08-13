@@ -4,7 +4,7 @@
   <packaging>jar</packaging>
   <groupId>com.monkeyci</groupId>
   <artifactId>plugin-kaniko</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>plugin-kaniko</name>
   <dependencies>
     <dependency>
@@ -15,7 +15,7 @@
     <dependency>
       <groupId>com.monkeyci</groupId>
       <artifactId>app</artifactId>
-      <version>0.5.4</version>
+      <version>0.7.1</version>
     </dependency>
   </dependencies>
   <build>
