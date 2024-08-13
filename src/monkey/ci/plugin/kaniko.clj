@@ -80,3 +80,6 @@
                                (select-keys [:creds-param :archs :target-img])
                                (assoc :img-template (str target-img "-ARCH")))
                            ctx)]))))
+
+(defn multi-platform-image-job [conf]
+  (partial multi-platform-image conf))
