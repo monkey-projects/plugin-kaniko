@@ -80,7 +80,7 @@
                     (filter (partial re-matches #"image-.*"))))))
 
       (testing "uses architecture in target image name"
-        (is (= "test/image:tag-arm"
+        (is (= "test/image:tag-arm64"
                (first (match-cmdline "image-arm" #".*--destination (\S+).*")))))
 
       (testing "creates manifest job"

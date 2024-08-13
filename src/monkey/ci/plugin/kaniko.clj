@@ -69,7 +69,7 @@
    architectures and image tag."
   [{:keys [target-img archs] :as conf} ctx]
   (letfn [(img-template [arch]
-            (str target-img "-" (name arch)))]
+            (str target-img "-" (name arch) "64"))]
     (-> (map #(image (-> conf
                          (dissoc :archs)
                          (assoc :arch %
