@@ -106,9 +106,18 @@
       (let [jobs (sut/multi-platform-image
                   {:archs [:arm :amd]
                    :target-img "test-target"
-                   :img-job-id "custom-img-job"}
+                   :image {:job-id "custom-img-job"}}
                   test-ctx)]
         (is (= ["custom-img-job-arm" "custom-img-job-amd"]
                (->> jobs
                     (map bc/job-id)
-                    (filter (partial re-matches #"^custom.*")))))))))
+                    (filter (partial re-matches #"^custom.*")))))))
+
+    (testing "can specify manifest job id"
+      (let [jobs (->> (sut/multi-platform-image
+                       {:archs [:arm :amd]
+                        :target-img "test-target"
+                        :manifest {:job-id "test-manifest"}}
+                       test-ctx)
+                      (group-by bc/job-id))]
+        (is (contains? jobs "test-manifest"))))))

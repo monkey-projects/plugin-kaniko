@@ -34,6 +34,10 @@ for the docker file is `Dockerfile`.
 The architectures that can be specified are those that are available in MonkeyCI (e.g.
 `:arm`, `:amd`).
 
+You can pass any additional container options using `:container-opts`.  This is useful
+if you want to specify dependencies or change the default memory allocation for the
+containers.
+
 ### Multi-platform Images
 
 Usually you will want to build multi platform images.  In Kaniko this is not possible, but
@@ -53,7 +57,7 @@ image this way.  Use `multi-platform-image-job` for this.
 This function will generate one `image` job for each platform, that will build and push
 an image to `<target-img>-<arch>`.  An extra job is added to invoke `manifest-tool` that will
 push a manifest that groups all image together using `target-img`.  You can override the job
-ids by specifying the `:image-job-id` and `:manifest-job-id` respectively.
+ids by specifying the `:image {:job-id}` and `:manifest {:job-id}` respectively.
 
 Additional build parameters are the same as those for `image` and `image-job` (except for `arch`).
 

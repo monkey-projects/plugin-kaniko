@@ -10,7 +10,7 @@
 
 (defn image
   "Creates a build job that builds and pushes a container image using kaniko."
-  [{:keys [creds-param subdir dockerfile target-img arch job-id]
+  [{:keys [creds-param subdir dockerfile target-img arch job-id container-opts]
     :or {creds-param "dockerhub-creds"
          dockerfile "Dockerfile"
          job-id "image"}
@@ -32,7 +32,8 @@
           :script [(str "echo $DOCKER_CREDS > " config-file)
                    (format "/kaniko/executor --destination %s --dockerfile %s --context dir://%s"
                            target-img (str wd "/" dockerfile) wd)]}
-         (merge (select-keys conf [:arch]))))))
+         (merge (select-keys conf [:arch])
+                container-opts)))))
 
 (defn image-job
   "Returns a job fn that pushes an image using given config"
@@ -42,7 +43,7 @@
 (defn manifest
   "Uses manifest-tool to merge the images built for several architectures into one
    manifest and pushes it."
-  [{:keys [creds-param archs img-template target-img img-job-id job-id]
+  [{:keys [creds-param archs img-template target-img img-job-id job-id container-opts]
     :or {creds-param "dockerhub-creds"
          img-job-id "image"
          job-id "push-manifest"}
@@ -53,17 +54,19 @@
     (bc/container-job
      job-id
      ;; TODO Switch to mplatform/manifest-tool as soon as MonkeyCI allows shell-less containers
-     {:image "docker.io/monkeyci/manifest-tool:2.1.7"
-      :container/env {"DOCKER_CREDS" creds}
-      :script [(str "echo $DOCKER_CREDS > " creds-path)
-               (format "/manifest-tool --docker-cfg=%s push from-args --platforms %s --template %s --target %s"
-                       creds-path
-                       (->> archs
-                            (map (comp (partial format "linux/%s64") name))
-                            (cs/join ","))
-                       img-template
-                       target-img)]
-      :dependencies (mapv (comp (partial str img-job-id "-") name) archs)})))
+     (merge
+      {:image "docker.io/monkeyci/manifest-tool:2.1.7"
+       :container/env {"DOCKER_CREDS" creds}
+       :script [(str "echo $DOCKER_CREDS > " creds-path)
+                (format "/manifest-tool --docker-cfg=%s push from-args --platforms %s --template %s --target %s"
+                        creds-path
+                        (->> archs
+                             (map (comp (partial format "linux/%s64") name))
+                             (cs/join ","))
+                        img-template
+                        target-img)]
+       :dependencies (mapv (comp (partial str img-job-id "-") name) archs)}
+      container-opts))))
 
 (defn manifest-job [conf]
   (partial manifest conf))
@@ -78,13 +81,14 @@
                          (dissoc :archs)
                          (assoc :arch %
                                 :target-img (img-template %))
-                         (mc/assoc-some :job-id (:img-job-id conf)))
+                         (merge (:image conf)))
                      ctx)
              archs)
         (concat [(manifest (-> conf
-                               (select-keys [:creds-param :archs :target-img :img-job-id])
+                               (select-keys [:creds-param :archs :target-img])
                                (assoc :img-template (str target-img "-ARCH"))
-                               (mc/assoc-some :job-id (:manifest-job-id conf)))
+                               (merge (:manifest conf))
+                               (mc/assoc-some :img-job-id (get-in conf [:image :job-id])))
                            ctx)]))))
 
 (defn multi-platform-image-job [conf]
