@@ -21,7 +21,8 @@ If you only need to build a simple image for a single architecture, you can do t
                :arch :amd
 	       :subdir "docker"
 	       :dockerfile "Dockerfile"
-	       :creds-param "docker-credentials"})
+	       :creds-param "docker-credentials"
+	       :job-id "build-img"})
 ```
 
 The `creds-param` config key is used to fetch the credentials from your build parameters.
@@ -51,13 +52,14 @@ image this way.  Use `multi-platform-image-job` for this.
 
 This function will generate one `image` job for each platform, that will build and push
 an image to `<target-img>-<arch>`.  An extra job is added to invoke `manifest-tool` that will
-push a manifest that groups all image together using `target-img`.
+push a manifest that groups all image together using `target-img`.  You can override the job
+ids by specifying the `:image-job-id` and `:manifest-job-id` respectively.
 
 Additional build parameters are the same as those for `image` and `image-job` (except for `arch`).
 
 ## TODO
 
-Make configuration more flexible by allowing to specify the job names and image templates.
+Make configuration more flexible by allowing to specify the image templates and other stuff.
 
 ## License
 

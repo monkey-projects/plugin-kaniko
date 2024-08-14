@@ -1,5 +1,6 @@
 (ns monkey.ci.plugin.kaniko
   (:require [clojure.string :as cs]
+            [medley.core :as mc]
             [monkey.ci.build
              [api :as api]
              [core :as bc]
@@ -9,9 +10,10 @@
 
 (defn image
   "Creates a build job that builds and pushes a container image using kaniko."
-  [{:keys [creds-param subdir dockerfile target-img arch]
+  [{:keys [creds-param subdir dockerfile target-img arch job-id]
     :or {creds-param "dockerhub-creds"
-         dockerfile "Dockerfile"}
+         dockerfile "Dockerfile"
+         job-id "image"}
     :as conf}
    ctx]
   (let [wd (cond-> (s/container-work-dir ctx)
@@ -20,7 +22,7 @@
         config-dir "/kaniko/.docker"
         config-file (str config-dir "/config.json")]
     (bc/container-job
-     (cond-> "image"
+     (cond-> job-id
        arch (str "-" (name arch)))
      (-> {:image (str "docker.io/monkeyci/kaniko:" kaniko-version)
           :container/env {"DOCKER_CREDS" creds
@@ -40,14 +42,16 @@
 (defn manifest
   "Uses manifest-tool to merge the images built for several architectures into one
    manifest and pushes it."
-  [{:keys [creds-param archs img-template target-img]
-    :or {creds-param "dockerhub-creds"}
+  [{:keys [creds-param archs img-template target-img img-job-id job-id]
+    :or {creds-param "dockerhub-creds"
+         img-job-id "image"
+         job-id "push-manifest"}
     :as conf}
    ctx]
   (let [creds-path "/tmp/docker-config.json"
         creds (get (api/build-params ctx) creds-param)]
     (bc/container-job
-     "push-manifest"
+     job-id
      ;; TODO Switch to mplatform/manifest-tool as soon as MonkeyCI allows shell-less containers
      {:image "docker.io/monkeyci/manifest-tool:2.1.7"
       :container/env {"DOCKER_CREDS" creds}
@@ -59,7 +63,7 @@
                             (cs/join ","))
                        img-template
                        target-img)]
-      :dependencies (mapv (comp (partial str "image-") name) archs)})))
+      :dependencies (mapv (comp (partial str img-job-id "-") name) archs)})))
 
 (defn manifest-job [conf]
   (partial manifest conf))
@@ -73,12 +77,14 @@
     (-> (map #(image (-> conf
                          (dissoc :archs)
                          (assoc :arch %
-                                :target-img (img-template %)))
+                                :target-img (img-template %))
+                         (mc/assoc-some :job-id (:img-job-id conf)))
                      ctx)
              archs)
         (concat [(manifest (-> conf
-                               (select-keys [:creds-param :archs :target-img])
-                               (assoc :img-template (str target-img "-ARCH")))
+                               (select-keys [:creds-param :archs :target-img :img-job-id])
+                               (assoc :img-template (str target-img "-ARCH"))
+                               (mc/assoc-some :job-id (:manifest-job-id conf)))
                            ctx)]))))
 
 (defn multi-platform-image-job [conf]

@@ -26,7 +26,10 @@
       (is (= ::test-arch (:arch (sut/image {:arch ::test-arch} test-ctx)))))
 
     (testing "includes architecture in job name"
-      (is (= "image-arm" (bc/job-id (sut/image {:arch :arm} test-ctx)))))))
+      (is (= "image-arm" (bc/job-id (sut/image {:arch :arm} test-ctx)))))
+
+    (testing "can specify job id"
+      (is (= "test-job" (bc/job-id (sut/image {:job-id "test-job"} test-ctx)))))))
 
 (deftest image-job
   (testing "returns image fn"
@@ -53,6 +56,15 @@
 
       (testing "is dependent on image jobs"
         (is (= ["image-arm" "image-amd"]
+               (:dependencies job)))))
+
+    (testing "can specify image job id"
+      (let [job (sut/manifest {:archs [:arm :amd]
+                               :img-template "src-image-ARCH"
+                               :target-img "dest-image"
+                               :img-job-id "test-img-job"}
+                              test-ctx)]
+        (is (= ["test-img-job-arm" "test-img-job-amd"]
                (:dependencies job)))))))
 
 (deftest manifest-job
@@ -88,4 +100,15 @@
 
       (testing "pushes manifest to target job"
         (is (= "test/image:tag"
-               (first (match-cmdline "push-manifest" #".*--target (\S+).*"))))))))
+               (first (match-cmdline "push-manifest" #".*--target (\S+).*"))))))
+
+    (testing "can specify image job id"
+      (let [jobs (sut/multi-platform-image
+                  {:archs [:arm :amd]
+                   :target-img "test-target"
+                   :img-job-id "custom-img-job"}
+                  test-ctx)]
+        (is (= ["custom-img-job-arm" "custom-img-job-amd"]
+               (->> jobs
+                    (map bc/job-id)
+                    (filter (partial re-matches #"^custom.*")))))))))
