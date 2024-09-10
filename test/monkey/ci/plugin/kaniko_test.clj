@@ -29,7 +29,25 @@
       (is (= "image-arm" (bc/job-id (sut/image {:arch :arm} test-ctx)))))
 
     (testing "can specify job id"
-      (is (= "test-job" (bc/job-id (sut/image {:job-id "test-job"} test-ctx)))))))
+      (is (= "test-job" (bc/job-id (sut/image {:job-id "test-job"} test-ctx)))))
+
+    (testing "without subdir"
+      (let [job (sut/image {} test-ctx)
+            cmd (-> job :script second)]
+        (testing "uses workdir as context dir"
+          (is (re-matches #".*--context dir://\..*" cmd)))
+
+        (testing "refers to dockerfile as-is"
+          (is (re-matches #".*--dockerfile Dockerfile.*" cmd)))))
+
+    (testing "with subdir"
+      (let [job (sut/image {:subdir "test-subdir"} test-ctx)
+            cmd (-> job :script second)]
+        (testing "uses subdir as context dir"
+          (is (re-matches #".*--context dir://test-subdir.*" cmd)))
+
+        (testing "refers to dockerfile as-is"
+          (is (re-matches #".*--dockerfile Dockerfile.*" cmd)))))))
 
 (deftest image-job
   (testing "returns image fn"

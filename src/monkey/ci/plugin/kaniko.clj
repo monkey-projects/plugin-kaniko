@@ -3,8 +3,7 @@
             [medley.core :as mc]
             [monkey.ci.build
              [api :as api]
-             [core :as bc]
-             [shell :as s]]))
+             [core :as bc]]))
 
 (def kaniko-version "1.23.2")
 
@@ -16,11 +15,10 @@
          job-id "image"}
     :as conf}
    ctx]
-  (let [wd (cond-> (s/container-work-dir ctx)
-             subdir (str "/" subdir))
-        creds (get (api/build-params ctx) creds-param)
+  (let [creds (get (api/build-params ctx) creds-param)
         config-dir "/kaniko/.docker"
-        config-file (str config-dir "/config.json")]
+        config-file (str config-dir "/config.json")
+        ctx (or subdir ".")]
     (bc/container-job
      (cond-> job-id
        arch (str "-" (name arch)))
@@ -31,7 +29,7 @@
           ;; Kaniko requires that docker credentials are written to file
           :script [(str "echo $DOCKER_CREDS > " config-file)
                    (format "/kaniko/executor --destination %s --dockerfile %s --context dir://%s"
-                           target-img (str wd "/" dockerfile) wd)]}
+                           target-img dockerfile ctx)]}
          (merge (select-keys conf [:arch])
                 container-opts)))))
 
