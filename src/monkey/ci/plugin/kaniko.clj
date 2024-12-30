@@ -89,5 +89,9 @@
                                (mc/assoc-some :img-job-id (get-in conf [:image :job-id])))
                            ctx)]))))
 
-(defn multi-platform-image-job [conf]
+(defn multi-platform-image-jobs [conf]
   (partial multi-platform-image conf))
+
+(def multi-platform-image-job
+  "For backwards compatibility"
+  multi-platform-image-jobs)

@@ -49,15 +49,16 @@ image this way.  Use `multi-platform-image-job` for this.
 
 ```clojure
 ;; This will generate multiple jobs that can be included in your build process.
-(pk/multi-platform-image
+(pk/multi-platform-image-jobs
   {:target-img "docker.io/target/img:tag"
    :archs [:arm :amd]})
 ```
 
-This function will generate one `image` job for each platform, that will build and push
+This function will generate one `image-<arch>` job for each platform, that will build and push
 an image to `<target-img>-<arch>`.  An extra job is added to invoke `manifest-tool` that will
-push a manifest that groups all image together using `target-img`.  You can override the job
-ids by specifying the `:image {:job-id}` and `:manifest {:job-id}` respectively.
+push a manifest that groups all image together using `target-img`.  By default, it's job is
+is `push-manifest`.  You can override the job ids by specifying the `:image {:job-id}` and
+`:manifest {:job-id}` respectively.
 
 Additional build parameters are the same as those for `image` and `image-job` (except for `arch`).
 
