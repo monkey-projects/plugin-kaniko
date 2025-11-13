@@ -6,6 +6,7 @@
              [core :as bc]]))
 
 (def kaniko-version "1.23.2")
+(def manifest-version "2.1.7")
 
 (defn image
   "Creates a build job that builds and pushes a container image using kaniko."
@@ -53,7 +54,7 @@
      job-id
      ;; TODO Switch to mplatform/manifest-tool as soon as MonkeyCI allows shell-less containers
      (merge
-      {:image "docker.io/monkeyci/manifest-tool:2.1.7"
+      {:image (str "docker.io/monkeyci/manifest-tool:" manifest-version)
        :container/env {"DOCKER_CREDS" creds}
        :script [(str "echo $DOCKER_CREDS > " creds-path)
                 (format "/manifest-tool --docker-cfg=%s push from-args --platforms %s --template %s --target %s"

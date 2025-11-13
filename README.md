@@ -14,19 +14,31 @@ First include the plugin in your build `deps.edn`:
 Several functions are available that generate build jobs depending on your needs.
 If you only need to build a simple image for a single architecture, you can do this:
 ```clojure
-(require '[monkey.ci.plugin.kaniko :as pk])
+(ns build
+  (:require [monkey.ci.api :as m]
+            [monkey.ci.plugin.kaniko :as pk]))
 
 ;; Returns a job function that can be executed by MonkeyCI
-(pk/image-job {:target-img "docker.io/target/img:tag"
-               :arch :amd
-	       :subdir "docker"
-	       :dockerfile "Dockerfile"
-	       :creds-param "docker-credentials"
-	       :job-id "build-img"})
+(def image-1
+  (pk/image-job {:target-img "docker.io/target/img:tag"
+                 :arch :amd
+                 :subdir "docker"
+                 :dockerfile "Dockerfile"
+                 :creds-param "docker-credentials"
+                 :job-id "build-img"}))
+
+;; Alternatively, the `image` function returns the job itself, useful in
+;; case of conditions
+(defn image-2 [ctx]
+  ;; Only build image if the build is triggered by a tag
+  (when (m/git-tag ctx)
+    (pk/image {...} ctx)))
+
+;; Other build jobs...
 ```
 
 The `creds-param` config key is used to fetch the credentials from your build parameters.
-By default this is `docker-credentials`.  The credentials should be of the format of your
+By default this is `dockerhub-creds`.  The credentials should be of the format of your
 standard `.docker/config.json`.  `dockerfile` is relative to your repository root directory,
 and so is `subdir`, which is used as the context for building the image.  The default name
 for the docker file is `Dockerfile`.
