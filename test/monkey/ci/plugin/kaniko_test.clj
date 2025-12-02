@@ -1,17 +1,15 @@
 (ns monkey.ci.plugin.kaniko-test
   (:require [clojure.test :refer [deftest testing is]]
-            [monkey.ci.build
-             [api :as api]
-             [core :as bc]]
+            [monkey.ci.api :as m]
             [monkey.ci.plugin.kaniko :as sut]))
 
 (def test-ctx {})
 
 (deftest image
-  (with-redefs [api/build-params (constantly {"dockerhub-creds" "test-creds"})]
+  (with-redefs [m/build-params (constantly {"dockerhub-creds" "test-creds"})]
     (let [job (sut/image {} test-ctx)]
       (testing "returns container job"
-        (is (bc/container-job? job)))
+        (is (m/container-job? job)))
 
       (testing "uses kaniko image"
         (is (re-matches #".*kaniko.*" (:image job))))
@@ -26,10 +24,10 @@
       (is (= ::test-arch (:arch (sut/image {:arch ::test-arch} test-ctx)))))
 
     (testing "includes architecture in job name"
-      (is (= "image-arm" (bc/job-id (sut/image {:arch :arm} test-ctx)))))
+      (is (= "image-arm" (m/job-id (sut/image {:arch :arm} test-ctx)))))
 
     (testing "can specify job id"
-      (is (= "test-job" (bc/job-id (sut/image {:job-id "test-job"} test-ctx)))))
+      (is (= "test-job" (m/job-id (sut/image {:job-id "test-job"} test-ctx)))))
 
     (testing "without subdir"
       (let [job (sut/image {} test-ctx)
@@ -54,13 +52,13 @@
     (is (fn? (sut/image-job {})))))
 
 (deftest manifest
-  (with-redefs [api/build-params (constantly {"dockerhub-creds" "test-creds"})]
+  (with-redefs [m/build-params (constantly {"dockerhub-creds" "test-creds"})]
     (let [job (sut/manifest {:archs [:arm :amd]
                              :img-template "src-image-ARCH"
                              :target-img "dest-image"}
                             test-ctx)]
       (testing "returns container job"
-        (is (bc/container-job? job)))
+        (is (m/container-job? job)))
 
       (testing "uses manifest-tool image"
         (is (re-matches #".*manifest-tool.*" (:image job))))
@@ -90,12 +88,12 @@
     (is (fn? (sut/manifest-job {})))))
 
 (deftest multi-platform-image
-  (with-redefs [api/build-params (constantly {"dockerhub-creds" "test-creds"})]
+  (with-redefs [m/build-params (constantly {"dockerhub-creds" "test-creds"})]
     (let [jobs (sut/multi-platform-image
                 {:archs [:arm :amd]
                  :target-img "test/image:tag"}
                 test-ctx)
-          jobs-by-id (group-by bc/job-id jobs)
+          jobs-by-id (group-by m/job-id jobs)
           match-cmdline (fn [job pattern]
                           (->> (get jobs-by-id job)
                                first
@@ -120,6 +118,12 @@
         (is (= "test/image:tag"
                (first (match-cmdline "push-manifest" #".*--target (\S+).*"))))))
 
+    (testing "empty if no image jobs"
+      (is (empty? (sut/multi-platform-image
+                   {:archs []
+                    :target-img "test/image:tag"}
+                   test-ctx))))
+
     (testing "can specify image job id"
       (let [jobs (sut/multi-platform-image
                   {:archs [:arm :amd]
@@ -128,7 +132,7 @@
                   test-ctx)]
         (is (= ["custom-img-job-arm" "custom-img-job-amd"]
                (->> jobs
-                    (map bc/job-id)
+                    (map m/job-id)
                     (filter (partial re-matches #"^custom.*")))))))
 
     (testing "can specify manifest job id"
@@ -137,5 +141,5 @@
                         :target-img "test-target"
                         :manifest {:job-id "test-manifest"}}
                        test-ctx)
-                      (group-by bc/job-id))]
+                      (group-by m/job-id))]
         (is (contains? jobs "test-manifest"))))))

@@ -1,9 +1,7 @@
 (ns monkey.ci.plugin.kaniko
   (:require [clojure.string :as cs]
             [medley.core :as mc]
-            [monkey.ci.build
-             [api :as api]
-             [core :as bc]]))
+            [monkey.ci.api :as m]))
 
 (def kaniko-version "1.23.2")
 (def manifest-version "2.1.7")
@@ -16,11 +14,11 @@
          job-id "image"}
     :as conf}
    ctx]
-  (let [creds (get (api/build-params ctx) creds-param)
+  (let [creds (get (m/build-params ctx) creds-param)
         config-dir "/kaniko/.docker"
         config-file (str config-dir "/config.json")
         ctx (or subdir ".")]
-    (bc/container-job
+    (m/container-job
      (cond-> job-id
        arch (str "-" (name arch)))
      (-> {:image (str "docker.io/monkeyci/kaniko:" kaniko-version)
@@ -49,8 +47,8 @@
     :as conf}
    ctx]
   (let [creds-path "/tmp/docker-config.json"
-        creds (get (api/build-params ctx) creds-param)]
-    (bc/container-job
+        creds (get (m/build-params ctx) creds-param)]
+    (m/container-job
      job-id
      ;; TODO Switch to mplatform/manifest-tool as soon as MonkeyCI allows shell-less containers
      (merge
@@ -74,21 +72,22 @@
   "Creates jobs for building and pushing a multi-platform-image for the configured
    architectures and image tag."
   [{:keys [target-img archs] :as conf} ctx]
-  (letfn [(img-template [arch]
-            (str target-img "-" (name arch) "64"))]
-    (-> (map #(image (-> conf
-                         (dissoc :archs)
-                         (assoc :arch %
-                                :target-img (img-template %))
-                         (merge (:image conf)))
-                     ctx)
-             archs)
-        (concat [(manifest (-> conf
-                               (select-keys [:creds-param :archs :target-img])
-                               (assoc :img-template (str target-img "-ARCH"))
-                               (merge (:manifest conf))
-                               (mc/assoc-some :img-job-id (get-in conf [:image :job-id])))
-                           ctx)]))))
+  (when (not-empty archs)
+    (letfn [(img-template [arch]
+              (str target-img "-" (name arch) "64"))]
+      (-> (map #(image (-> conf
+                           (dissoc :archs)
+                           (assoc :arch %
+                                  :target-img (img-template %))
+                           (merge (:image conf)))
+                       ctx)
+               archs)
+          (concat [(manifest (-> conf
+                                 (select-keys [:creds-param :archs :target-img])
+                                 (assoc :img-template (str target-img "-ARCH"))
+                                 (merge (:manifest conf))
+                                 (mc/assoc-some :img-job-id (get-in conf [:image :job-id])))
+                             ctx)])))))
 
 (defn multi-platform-image-jobs [conf]
   (partial multi-platform-image conf))
